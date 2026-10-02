@@ -27,6 +27,7 @@ type StructConfig struct {
 	TelegramBot       *BotConfig   `env:", prefix=TELEGRAM_"`
 	BusinessGithubURL string       `env:"BUSINESS_GITHUB_URL"`
 	FilesWorkers      int          `env:"FILES_WORKERS, default=5"`
+	InternalSecret    string       `env:"INTERNAL_SECRET"`
 	DevMode           bool         `env:"DEV_MODE, default=false"`
 }
 

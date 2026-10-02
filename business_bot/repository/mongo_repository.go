@@ -26,6 +26,8 @@ type MongoRepository struct {
 	botUsers            *mongo.Collection
 	counters            *mongo.Collection
 	migrations          *mongo.Collection
+	businessConfig      *mongo.Collection
+	aiChats             *mongo.Collection
 
 	customRegistry *custom_registry.CustomRegistry
 }
@@ -135,6 +137,16 @@ func NewMongoRepository(cfg *config.MongoConfig) (*MongoRepository, error) {
 
 	countersCollection := db.Collection("counters")
 	migrationsCollection := db.Collection("migrations")
+	businessConfigCollection := db.Collection("business_config")
+	aiChatsCollection := db.Collection("ai_chats")
+	_, _ = aiChatsCollection.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{
+			{Key: "owner_id", Value: 1},
+			{Key: "bot_id", Value: 1},
+			{Key: "chat_id", Value: 1},
+		},
+		Options: options.Index().SetUnique(true).SetName("owner_bot_chat"),
+	})
 
 	repository := MongoRepository{
 		client:              client,
@@ -148,6 +160,8 @@ func NewMongoRepository(cfg *config.MongoConfig) (*MongoRepository, error) {
 		botUsers:            botUsersCollection,
 		counters:            countersCollection,
 		migrations:          migrationsCollection,
+		businessConfig:      businessConfigCollection,
+		aiChats:             aiChatsCollection,
 
 		customRegistry: customRegistry,
 	}

@@ -398,6 +398,14 @@ func (b *BotManager) setupBotHandlers(instance *BotInstance) {
 			th.AnyBusinessMessage(),
 		)
 
+		// .ai on|off — chatda AI sotuv-agentni dinamik boshqarish
+		aiRegex := regexp.MustCompile(`(?i)^\s*\.ai\s+(on|off|yoq|ochir)\b`)
+		userCommands.Handle(
+			utils.WithProm("handleUserAI", handlerGroup.HandleUserAI),
+			utils.BusinessMessageMatches(aiRegex),
+			th.AnyBusinessMessage(),
+		)
+
 		// вторая "а" - кириллическая
 		animRegex := regexp.MustCompile(`^\s*\.(a|а|anim)\s`)
 		userCommands.Handle(

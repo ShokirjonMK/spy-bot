@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nazorat — Admin Panel</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root { color-scheme: light dark; }
+  body { background:#0b1220; }
+  .card { background:#111a2e; border:1px solid #1e2b47; }
+  label { font-size:.8rem; color:#93a4c3; }
+  input,textarea,select { background:#0b1424; border:1px solid #26355a; color:#e6edf7; }
+  input:focus,textarea:focus,select:focus { outline:none; border-color:#3b82f6; }
+</style>
+</head>
+<body class="text-slate-100 min-h-screen">
+
+<!-- LOGIN -->
+<div id="login" class="hidden min-h-screen flex items-center justify-center p-4">
+  <div class="card rounded-2xl p-8 w-full max-w-md text-center">
+    <div class="text-3xl mb-1">🤖</div>
+    <h1 class="text-xl font-semibold mb-1">Nazorat — Sotuv Agent</h1>
+    <p class="text-slate-400 text-sm mb-6">Admin panelga kirish</p>
+    <div id="tg-login" class="flex justify-center mb-4"></div>
+    <div id="dev-login" class="hidden">
+      <div class="text-xs text-slate-500 my-3">— yoki lokal test (DEV) —</div>
+      <div class="flex gap-2">
+        <input id="dev-uid" placeholder="Telegram user id (masalan 813225336)" class="rounded-lg px-3 py-2 w-full text-sm">
+        <button onclick="devLogin()" class="bg-blue-600 hover:bg-blue-500 rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap">Kirish</button>
+      </div>
+    </div>
+    <p id="login-note" class="text-xs text-slate-500 mt-4"></p>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dash" class="hidden max-w-4xl mx-auto p-4 md:p-8">
+  <header class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-xl font-semibold">Sotuv Agent — boshqaruv</h1>
+      <p class="text-slate-400 text-sm">Biznes ma'lumotlari va AI sozlamalari</p>
+    </div>
+    <button onclick="logout()" class="text-sm text-slate-400 hover:text-white">Chiqish</button>
+  </header>
+
+  <!-- SUPERADMIN -->
+  <section id="admin" class="hidden card rounded-xl p-5 mb-5 space-y-4 border-amber-600/40">
+    <div class="flex items-center justify-between">
+      <h2 class="font-semibold text-amber-300">🛠 Superadmin — to'liq boshqaruv</h2>
+      <button onclick="loadAdmin()" class="text-xs text-slate-400 hover:text-white">↻ Yangilash</button>
+    </div>
+    <div id="admin-stats" class="grid grid-cols-2 md:grid-cols-6 gap-2 text-center"></div>
+    <div>
+      <div class="text-sm font-medium text-slate-300 mb-2">👥 Foydalanuvchilar</div>
+      <div class="overflow-x-auto"><table class="w-full text-sm" id="admin-users"></table></div>
+    </div>
+    <div>
+      <div class="text-sm font-medium text-slate-300 mb-2">🤖 Ulangan botlar</div>
+      <div class="overflow-x-auto"><table class="w-full text-sm" id="admin-bots"></table></div>
+    </div>
+  </section>
+
+  <!-- STATUS -->
+  <div id="status" class="card rounded-xl p-4 mb-5 text-sm"></div>
+
+  <!-- TELEGRAM ULASH -->
+  <section class="card rounded-xl p-5 mb-5 space-y-3">
+    <h2 class="font-semibold text-blue-300">🔗 Telegram bot ulash</h2>
+    <p class="text-xs text-slate-400">@BotFather'dan bot tokenini qo'ying. Bot'da <b>Business Mode</b> yoqilgan bo'lishi shart. Ulangach uni Telegram → Settings → Business → Chatbots'ga qo'shasiz.</p>
+    <div id="bot-connected" class="hidden">
+      <div class="flex items-center justify-between bg-green-500/10 border border-green-600/40 rounded-lg px-4 py-3">
+        <span class="text-sm">🟢 Ulangan bot: <b id="bot-uname"></b></span>
+        <button onclick="disconnectBot()" class="text-sm text-red-400 hover:text-red-300">Uzish</button>
+      </div>
+    </div>
+    <div id="bot-connect-form" class="flex gap-2">
+      <input id="bot-token" placeholder="123456:ABC-DEF..." class="rounded-lg px-3 py-2 w-full text-sm">
+      <button onclick="connectBot()" class="bg-blue-600 hover:bg-blue-500 rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap">Ulash</button>
+    </div>
+    <span id="bot-msg" class="text-sm"></span>
+  </section>
+
+  <form id="cfg-form" class="space-y-5">
+    <!-- Master switch -->
+    <div class="card rounded-xl p-4 flex items-center justify-between">
+      <div>
+        <div class="font-medium">Sotuv agentini yoqish</div>
+        <div class="text-xs text-slate-400">O'chiq bo'lsa bot javob bermaydi (faqat kuzatuv ishlaydi)</div>
+      </div>
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" id="enabled" class="sr-only peer">
+        <div class="w-12 h-6 bg-slate-600 peer-checked:bg-green-500 rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:h-5 after:w-5 after:rounded-full after:transition-all peer-checked:after:translate-x-6"></div>
+      </label>
+    </div>
+
+    <!-- Biznes profili -->
+    <section class="card rounded-xl p-5 space-y-3">
+      <h2 class="font-semibold text-blue-300">🏢 Biznes profili</h2>
+      <div><label>Kompaniya / brend nomi</label><input id="company_name" class="w-full rounded-lg px-3 py-2 mt-1"></div>
+      <div><label>Mahsulot / xizmat tavsifi</label><textarea id="product_info" rows="4" class="w-full rounded-lg px-3 py-2 mt-1" placeholder="Nima sotasiz? Asosiy afzalliklari..."></textarea></div>
+      <div><label>Narxlar / tariflar</label><textarea id="price_list" rows="3" class="w-full rounded-lg px-3 py-2 mt-1" placeholder="Masalan: Boshlang'ich — 500 000 so'm; Pro — 1 200 000 so'm"></textarea></div>
+      <div><label>Tez-tez so'raladigan savollar (FAQ)</label><textarea id="faq" rows="3" class="w-full rounded-lg px-3 py-2 mt-1" placeholder="S: Yetkazib berasizmi? J: Ha, butun O'zbekiston bo'ylab."></textarea></div>
+    </section>
+
+    <!-- Sotuv sozlamasi -->
+    <section class="card rounded-xl p-5 space-y-3">
+      <h2 class="font-semibold text-blue-300">🎯 Sotuv sozlamasi</h2>
+      <div><label>Maqsad</label>
+        <select id="sales_goal" class="w-full rounded-lg px-3 py-2 mt-1">
+          <option value="lead">Kontakt / lead olish</option>
+          <option value="order">Buyurtma qabul qilish</option>
+          <option value="call">Qo'ng'iroqqa yozib qo'yish</option>
+          <option value="inform">Ma'lumot berish + qiziqtirish</option>
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label>Til</label>
+          <select id="language" class="w-full rounded-lg px-3 py-2 mt-1">
+            <option value="uz">O'zbekcha</option><option value="ru">Ruscha</option><option value="en">Inglizcha</option><option value="auto">Suhbatdosh tiliga moslash</option>
+          </select>
+        </div>
+        <div><label>Uslub</label>
+          <select id="tone" class="w-full rounded-lg px-3 py-2 mt-1">
+            <option value="samimiy">Samimiy</option><option value="rasmiy">Rasmiy</option><option value="qiziqarli">Qiziqarli</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI sozlamasi -->
+    <section class="card rounded-xl p-5 space-y-3">
+      <h2 class="font-semibold text-blue-300">🧠 AI backend (mahalliy / boshqa)</h2>
+      <div><label>Endpoint URL</label><input id="ai_endpoint" class="w-full rounded-lg px-3 py-2 mt-1" placeholder="http://195.158.6.58:11434/v1/chat/completions"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label>Model</label><input id="ai_model" class="w-full rounded-lg px-3 py-2 mt-1" placeholder="qwen2.5 / llama3 ..."></div>
+        <div><label>Format</label>
+          <select id="ai_format" class="w-full rounded-lg px-3 py-2 mt-1"><option value="openai">OpenAI-mos (/v1/chat/completions)</option><option value="ollama">Ollama (/api/chat)</option></select>
+        </div>
+      </div>
+      <div><label>API kalit (ixtiyoriy)</label><input id="ai_api_key" type="password" class="w-full rounded-lg px-3 py-2 mt-1"></div>
+    </section>
+
+    <!-- Javob doirasi -->
+    <section class="card rounded-xl p-5 space-y-3">
+      <h2 class="font-semibold text-blue-300">💬 Javob doirasi</h2>
+      <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="reply_auto_new" class="w-4 h-4"> <span class="text-sm">Yangi / notanish odamlarga avtomatik javob bersin</span></label>
+      <div><label>Whitelist — qo'shimcha ruxsat berilgan chat ID lar (vergul bilan)</label><input id="reply_whitelist" class="w-full rounded-lg px-3 py-2 mt-1" placeholder="123456789, 987654321"></div>
+      <p class="text-xs text-slate-500">Dinamik: bu chatlarda bot doim javob beradi. Suhbat ichida <code>.ai off</code> yozib to'xtatish mumkin.</p>
+    </section>
+
+    <div class="flex items-center gap-3 pb-8">
+      <button type="submit" class="bg-green-600 hover:bg-green-500 rounded-lg px-6 py-2.5 font-medium">💾 Saqlash</button>
+      <span id="save-msg" class="text-sm"></span>
+    </div>
+  </form>
+</div>
+
+<!-- SUHBAT MODALI -->
+<div id="chat-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+  <div class="card rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+    <div class="flex items-center justify-between p-4 border-b border-slate-700">
+      <h3 class="font-semibold" id="chat-modal-title">Suhbatlar</h3>
+      <button onclick="closeChat()" class="text-slate-400 hover:text-white text-xl">×</button>
+    </div>
+    <div id="chat-modal-body" class="p-4 overflow-y-auto text-sm space-y-2"></div>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

@@ -53,6 +53,9 @@ func (h *Handler) HandleMessage(c *th.Context, update telego.Update) error {
 		log.Warn().Err(err).Msg("failed save/update chat name")
 	}
 
+	// AI sotuv-agent: partner xabariga avtomatik javob (config asosida).
+	h.handleAISales(c, message)
+
 	replyToMessage := message.ReplyToMessage
 	if replyToMessage == nil {
 		return nil

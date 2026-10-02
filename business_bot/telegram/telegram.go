@@ -20,6 +20,8 @@ const (
 func RunTelegram(ctx context.Context, mux *http.ServeMux, mongo *repository.MongoRepository, rdb *redis.Redis) {
 	mng := manager.NewBotManager(mongo, rdb, mux, BUSINESS_URL)
 
+	registerInternalAPI(mux, mng, mongo)
+
 	bots, err := mongo.AllBots(ctx)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to load bots from database")
